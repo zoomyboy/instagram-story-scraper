@@ -24,8 +24,10 @@ def filenameFromUrl(url):
 options = Options()
 options.add_argument("--headless")
 options.add_argument("--disable-gpu")
+options.add_argument("--lang=de")
 options.add_argument("--window-size=1920,1080")
 options.add_argument('--user-agent=Mozilla/5.0 Chrome/74.0.3729.169 Safari/537.36')
+options.add_experimental_option('prefs', {'intl.accept_languages': 'de_DE'})
 driver = webdriver.Chrome(options=options)
 
 css = {
@@ -35,17 +37,17 @@ css = {
 }
 
 def acceptCookies():
-    driver.find_element_by_xpath("//button[text()=\"Alle annehmen\"]").click()
+    driver.find_element_by_xpath("//button[text()=\"Accept All\"]").click()
 
 def login(myusername, mypassword, mode, accounts):
-    driver.implicitly_wait(5)
+    driver.implicitly_wait(10)
     print("Logging in as " + '"' + myusername + '".')
     driver.get("https://www.instagram.com/accounts/login/")
     acceptCookies()
     driver.find_element_by_name('username').send_keys(myusername)
     driver.find_element_by_name('password').send_keys(mypassword)
     driver.find_element_by_css_selector("#loginForm button[type=\"submit\"]").click()
-    driver.find_element_by_xpath("//button[text()=\"Jetzt nicht\"]").click()
+    driver.find_element_by_xpath("//button[text()=\"Not Now\"]").click()
 
     # Main loop of whole program
     scrapeStories()
@@ -64,10 +66,10 @@ def waitForUrlChange():
 def getSRCS(ImageList, VideoList):
     usernames = []
 
-    time.sleep(10)
     urlBefore = driver.current_url
-    driver.get_screenshot_as_file("screenshot.png")
     driver.find_element_by_css_selector(css.get('storyOpen')).click()
+    time.sleep(10)
+    driver.get_screenshot_as_file("screenshot.png")
 
     while driver.current_url != urlBefore:
         for element in driver.find_elements_by_css_selector(css.get('storyItem')):
@@ -119,8 +121,6 @@ def downloadInto(array, username):
                                 f.write(chunk)
     except Exception as e:
         print(e)
-
-
 
 def killMe():
     driver.close()
