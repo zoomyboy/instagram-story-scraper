@@ -13,9 +13,14 @@ import shutil
 from pathlib import Path
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.chrome.options import Options
+from zmatrix import Bot
+
+# m = Bot('instagramApi')
+# m.say('saysaysay')
+# exit(0)
 
 def filenameFromUrl(url):
-    found = re.search(r'stories/([^/]*)/([^/]*)', url)
+    found = re.search(r'/home/instagram/stories/([^/]*)/([^/]*)', url)
     ms = int(round(time.time() * 1000))
     if found is not None:
         return 'users/{}/{}'.format(found.group(1), ms)
