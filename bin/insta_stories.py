@@ -14,7 +14,7 @@ from pathlib import Path
 #driver = webdriver.Firefox()
 
 def login(myusername, mypassword, mode, accounts):
-    driver = webdriver.Firefox()
+    driver = webdriver.Chrome()
     # Login with arguments
     print("Logging in as " + '"' + myusername + '".')
     time.sleep(2)
