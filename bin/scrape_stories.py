@@ -6,18 +6,11 @@ import sys
 # ACCOUNTS
 # The accounts array is for the username(s) of the accounts scraping
 
-try:
-    username = sys.argv[1]
-    password = sys.argv[2]
-    mode = sys.argv[3]
-    accounts = sys.argv[4]
-    insta_stories.login(username, password, mode, accounts)
-except:
-    print("")
-    print ('Usage: scrape_stories.py [username] [password] [mode] [accounts]')
-    print('Example: scrape_stories.py username password 0 "pewdiepie"')
-    print('or')
-    print('Example: scrape_stories.py username password 1 ("pewdiepie", "jacksepticeye", "jaiden_animations")')
+username = sys.argv[1]
+password = sys.argv[2]
+mode = sys.argv[3]
+accounts = sys.argv[4]
+insta_stories.login(username, password, mode, accounts)
 
 """
  ___        ___        _    _        _
