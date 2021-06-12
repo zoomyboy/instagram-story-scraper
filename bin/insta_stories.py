@@ -12,6 +12,7 @@ from os.path import basename
 import shutil
 from pathlib import Path
 from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.chrome.options import Options
 
 def filenameFromUrl(url):
     found = re.search(r'stories/([^/]*)/([^/]*)', url)
@@ -20,17 +21,21 @@ def filenameFromUrl(url):
         return 'users/{}/{}'.format(found.group(1), ms)
     return None
 
-driver = webdriver.Chrome()
+options = Options()
+options.add_argument("--headless")
+options.add_argument("--disable-gpu")
+options.add_argument("--window-size=1920,1080")
+options.add_argument('--user-agent=Mozilla/5.0 Chrome/74.0.3729.169 Safari/537.36')
+driver = webdriver.Chrome(options=options)
 
 css = {
         'storyItems': '.zGtbP.IPQK5.VideM .OE3OK',
-        'cookiesYes': '.aOOlW.bIiDR',
         'storyOpen': 'ul.vi798 button.OE3OK',
         'storyItem': '.szopg video, .szopg img:not(._6q-tv)',
 }
 
 def acceptCookies():
-    driver.find_element_by_css_selector(css.get('cookiesYes')).click()
+    driver.find_element_by_xpath("//button[text()=\"Alle annehmen\"]").click()
 
 def login(myusername, mypassword, mode, accounts):
     driver.implicitly_wait(5)
@@ -40,7 +45,6 @@ def login(myusername, mypassword, mode, accounts):
     driver.find_element_by_name('username').send_keys(myusername)
     driver.find_element_by_name('password').send_keys(mypassword)
     driver.find_element_by_css_selector("#loginForm button[type=\"submit\"]").click()
-    driver.find_element_by_xpath("//button[text()=\"Jetzt nicht\"]").click()
     driver.find_element_by_xpath("//button[text()=\"Jetzt nicht\"]").click()
 
     # Main loop of whole program
@@ -60,10 +64,10 @@ def waitForUrlChange():
 def getSRCS(ImageList, VideoList):
     usernames = []
 
+    time.sleep(10)
     urlBefore = driver.current_url
-
+    driver.get_screenshot_as_file("screenshot.png")
     driver.find_element_by_css_selector(css.get('storyOpen')).click()
-    time.sleep(5)
 
     while driver.current_url != urlBefore:
         for element in driver.find_elements_by_css_selector(css.get('storyItem')):
