@@ -1,85 +1,94 @@
 from selenium import webdriver
 from bs4 import BeautifulSoup
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support import expected_conditions as EC
 import selenium
-import time
 import wget
 import urllib.request
-import sys, os
+import sys, os, re, time
 import subprocess
 import requests
 from os.path import basename
 import shutil
 from pathlib import Path
+from selenium.webdriver.support.ui import WebDriverWait
 
-#driver = webdriver.Firefox()
+def filenameFromUrl(url):
+    found = re.search(r'stories/([^/]*)/([^/]*)', url)
+    ms = int(round(time.time() * 1000))
+    if found is not None:
+        return 'users/{}/{}'.format(found.group(1), ms)
+    return None
+
+driver = webdriver.Chrome()
+
+css = {
+        'storyItems': '.zGtbP.IPQK5.VideM .OE3OK',
+        'cookiesYes': '.aOOlW.bIiDR',
+        'storyOpen': 'ul.vi798 button.OE3OK',
+        'storyItem': '.szopg video, .szopg img:not(._6q-tv)',
+}
+
+def acceptCookies():
+    driver.find_element_by_css_selector(css.get('cookiesYes')).click()
 
 def login(myusername, mypassword, mode, accounts):
-    driver = webdriver.Chrome()
-    # Login with arguments
+    driver.implicitly_wait(5)
     print("Logging in as " + '"' + myusername + '".')
-    time.sleep(2)
     driver.get("https://www.instagram.com/accounts/login/")
-    time.sleep(1)
+    acceptCookies()
     driver.find_element_by_name('username').send_keys(myusername)
     driver.find_element_by_name('password').send_keys(mypassword)
-    time.sleep(2.25)
-    # Click Login
-    try:
-        driver.find_element_by_xpath("/html/body/span/section/main/div/article/div/div[1]/div/form/div[4]/button/div").click()
-    except Exception as e:
-        #print(e)
-        print("Not able to use the default login button path...")
-        print("Using alternative path...")
-        print("")
-        driver.find_element_by_xpath("/html/body/span/section/main/div/article/div/div[1]/div/form/div[5]/button").click()
-    time.sleep(2)
-    # Main loop of whole program
-    try:
-        if mode != 0:
-            for username in accounts:
-                scrapeStories(username)
-            killMe()
-        else:
-            scrapeStories(accounts)
-            killMe()
-    except Exception as e:
-        print(e)
-        killMe()
+    driver.find_element_by_css_selector("#loginForm button[type=\"submit\"]").click()
+    driver.find_element_by_xpath("//button[text()=\"Jetzt nicht\"]").click()
+    driver.find_element_by_xpath("//button[text()=\"Jetzt nicht\"]").click()
 
-def scrapeStories(username):
+    # Main loop of whole program
+    scrapeStories()
+    killMe()
+
+def scrapeStories():
     #put links in arrays
-    print("Scraping stories from " + '"' + username + '".' )
     ImageList = []
     VideoList = []
-    getSRCS(username, ImageList, VideoList)
-    # Download images into folders made with username of account
-    downloadInto(ImageList, username)
-    downloadInto(VideoList, username)
-    # Put downloading system into a function
-    # Make an array of users to download
-    print("Downloaded " + str(len(ImageList)) + " images from " + '"' + username + '".')
-    print("Downloaded " + str(len(VideoList)) + " videos from " + '"' + username + '".')
+    getSRCS(ImageList, VideoList)
 
-def getSRCS(username, ImageList, VideoList):
-    # Get every path of image and video for specific user by pressing button then adding
-    # While the stories are from the given user, keep clicking and logging
-    story_page = "https://www.instagram.com/stories" + "/" + username + "/"
-    driver.get(story_page)
-    while driver.current_url == story_page:
-        #Get all resources after clicking
-        Resources = driver.execute_script("return window.performance.getEntriesByType('resource');")
-        time.sleep(2)
-        Resources = driver.execute_script("return window.performance.getEntriesByType('resource');")
-        #print(Resources)
-        for resource in Resources:
-            if 'jpg' in resource['name'] and resource['decodedBodySize'] > 9900:
-                if resource['name'] not in ImageList:
-                    ImageList.append(resource['name'])
-            if 'mp4' in resource['name'] and resource['initiatorType'] != 'imageset':
-                if resource['name'] not in ImageList:
-                    VideoList.append(resource['name'])
-        time.sleep(1)
-        driver.find_element_by_xpath("/html/body/span/section/div/div/section/div[2]/button[2]/div").click()
+def waitForUrlChange():
+    before = driver.current_url
+    WebDriverWait(driver, 60).until(lambda driver: driver.current_url != before)
+
+def getSRCS(ImageList, VideoList):
+    usernames = []
+
+    urlBefore = driver.current_url
+
+    driver.find_element_by_css_selector(css.get('storyOpen')).click()
+    time.sleep(5)
+
+    while driver.current_url != urlBefore:
+        for element in driver.find_elements_by_css_selector(css.get('storyItem')):
+            filename = filenameFromUrl(driver.current_url)
+            if element.tag_name == 'video':
+                url = element.find_element_by_tag_name('source').get_attribute('src')
+            if element.tag_name == 'img':
+                url = element.get_attribute('src')
+
+            if not os.path.exists(os.path.dirname(filename)):
+                try:
+                    os.makedirs(os.path.dirname(filename))
+                except OSError as exc:
+                    pass
+
+            print('downloading')
+            with requests.get(url, stream=True) as r:
+                r.raise_for_status()
+                with open(filename, 'wb') as f:
+                    for chunk in r.iter_content(chunk_size=8192):
+                        if chunk: # filter out keep-alive new chunks
+                            f.write(chunk)
+            
+            print('download complete')
+        waitForUrlChange()
 
 def downloadInto(array, username):
     #Make folders for files
