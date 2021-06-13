@@ -20,10 +20,10 @@ from zmatrix import Bot
 # exit(0)
 
 def filenameFromUrl(url):
-    found = re.search(r'/home/instagram/stories/([^/]*)/([^/]*)', url)
+    found = re.search(r'stories/([^/]*)/([^/]*)', url)
     ms = int(round(time.time() * 1000))
     if found is not None:
-        return 'users/{}/{}'.format(found.group(1), ms)
+        return '/home/instagram/stories/{}/{}'.format(found.group(1), ms)
     return None
 
 options = Options()
